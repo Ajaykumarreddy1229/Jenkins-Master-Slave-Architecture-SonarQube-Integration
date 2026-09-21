@@ -1,0 +1,43 @@
+A simplified example:
+
+pipeline {
+    agent any
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                    url: 'YOUR_REPOSITORY_URL'
+            }
+        }
+
+        stage('Compile') {
+            steps {
+                sh 'mvn compile'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                    mvn org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+                    '''
+                }
+            }
+        }
+
+        stage('Artifact') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+    }
+}
