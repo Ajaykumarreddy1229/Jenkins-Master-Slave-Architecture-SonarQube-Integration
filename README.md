@@ -1,68 +1,200 @@
-# Jenkins-Master-Slave-Architecture-SonarQube-Integration
+# Jenkins Controller-Agent Architecture & SonarQube Integration
 
-**📌 Overview**
+> **Topic:** Jenkins Controller/Agent Architecture + SonarQube Integration
+> **Practice:** Hands-on DevOps Learning
+> **Environment:** AWS EC2, Amazon Linux, Java, Maven, Git
 
-This project documents my DevOps learning and hands-on practice with:
+---
 
-Jenkins Master/Slave (Controller/Agent) architecture
-Jenkins Pipeline agents
+# 1. Project Overview
+
+This project documents my hands-on practice with:
+
+```text
+Jenkins Controller/Agent Architecture
+Jenkins Pipeline Agents
 AWS EC2
 Java
 Maven
 Git
-SSH-based Jenkins agents
+SSH-Based Jenkins Agents
 SonarQube
-Jenkins + SonarQube integration
+Jenkins + SonarQube Integration
+```
 
-The objective was to understand how Jenkins can distribute build workloads across multiple machines and how SonarQube can be integrated into a CI pipeline for code-quality analysis.
+The main objectives were:
 
-**1. Jenkins Master & Slave Architecture**
-Why use Jenkins Agents?
+```text
+1. Understand Jenkins Controller/Agent architecture
+2. Distribute build workloads across multiple machines
+3. Configure EC2 instances as Jenkins agents
+4. Connect Jenkins agents using SSH
+5. Understand SonarQube code analysis
+6. Integrate SonarQube with a Jenkins CI pipeline
+```
 
-When Jenkins handles many builds, executing all workloads on the Jenkins controller can increase its workload.
+---
 
-Jenkins agents can be used to distribute build jobs across multiple machines.
+# 2. Jenkins Controller & Agent Architecture
 
-**Architecture**
-                    +----------------------+
-                    |   Jenkins Controller |
-                    |       / Master       |
-                    +----------+-----------+
-                               |
-                +--------------+--------------+
-                |                             |
-                v                             v
-       +----------------+            +----------------+
-       |    Agent 1     |            |    Agent 2     |
-       |    slave1      |            |    slave2      |
-       |                |            |                |
-       | Java/Maven/Git  |            | Java/Maven/Git |
-       +----------------+            +----------------+
+## What is Jenkins Controller?
 
-Jenkins documentation increasingly uses Controller and Agent terminology instead of Master/Slave.
+The **Jenkins Controller** is the central Jenkins server that manages the Jenkins environment.
 
-**2. Agent Setup**
+It is responsible for tasks such as:
 
-I practiced creating EC2 instances and configuring them as Jenkins agents.
+* Managing jobs
+* Scheduling builds
+* Managing agents
+* Managing credentials
+* Managing Jenkins configuration
+* Coordinating pipeline execution
 
-Agent requirements
+---
+
+# 3. What is a Jenkins Agent?
+
+A **Jenkins Agent** is a machine that executes build and pipeline workloads assigned by the Jenkins Controller.
+
+Agents can be separate EC2 instances or other machines connected to Jenkins.
+
+---
+
+# 4. Why Use Jenkins Agents?
+
+When Jenkins handles many builds, running every workload directly on the controller can increase its workload.
+
+Agents allow Jenkins to distribute workloads across multiple machines.
+
+### Without Agents
+
+```text
+                 Jenkins Controller
+                       |
+             ┌─────────┼─────────┐
+             ↓         ↓         ↓
+           Build 1   Build 2   Build 3
+             |
+        High Workload
+```
+
+### With Agents
+
+```text
+                  Jenkins Controller
+                         |
+              ┌──────────┴──────────┐
+              ↓                     ↓
+           Agent 1                Agent 2
+              |                     |
+           Build 1               Build 2
+              |                     |
+           Build 3               Build 4
+```
+
+This allows workloads to be distributed across multiple machines.
+
+---
+
+# 5. Jenkins Controller-Agent Architecture
+
+```text
+                  +------------------------+
+                  |   Jenkins Controller   |
+                  |                        |
+                  |  Manage & Schedule     |
+                  |       Builds           |
+                  +-----------+------------+
+                              |
+                    Jenkins Communication
+                              |
+              +---------------+---------------+
+              |                               |
+              ↓                               ↓
+      +---------------+               +---------------+
+      |    Agent 1    |               |    Agent 2    |
+      |    slave1     |               |    slave2     |
+      |               |               |               |
+      | Java          |               | Java          |
+      | Maven         |               | Maven         |
+      | Git           |               | Git           |
+      +---------------+               +---------------+
+```
+
+> Jenkins documentation increasingly uses **Controller** and **Agent** terminology instead of **Master** and **Slave**.
+
+---
+
+# 6. Jenkins Agent Requirements
+
+An EC2 instance used as a Jenkins agent needs the required software and connectivity.
+
+Typical requirements:
+
+```text
 Amazon Linux
 Java
 Maven
 Git
-SSH connectivity
-Jenkins agent configuration
+SSH Connectivity
+Jenkins Agent Configuration
+```
 
-Example installation:
+The exact Java version should match the Jenkins and application requirements of the environment.
 
+---
+
+# 7. Agent EC2 Setup
+
+For this practice, I created EC2 instances and configured them as Jenkins agents.
+
+Example:
+
+```text
+Jenkins Controller
+       |
+       ├── Agent 1
+       |
+       └── Agent 2
+```
+
+Each agent can have the tools required to execute the assigned builds.
+
+---
+
+# 8. Install Java, Maven and Git
+
+Example command:
+
+```bash
 sudo yum install java-21-amazon-corretto-devel maven git -y
+```
 
-The required Java version should match the Jenkins/plugin/application requirements used in the environment.
+Check Java:
 
-**3. Configure Jenkins Node**
+```bash
+java -version
+```
 
-From Jenkins:
+Check Maven:
 
+```bash
+mvn --version
+```
+
+Check Git:
+
+```bash
+git --version
+```
+
+---
+
+# 9. Configure Jenkins Agent
+
+From the Jenkins Controller:
+
+```text
 Manage Jenkins
       ↓
 Nodes
@@ -70,128 +202,126 @@ Nodes
 New Node
       ↓
 Permanent Agent
+```
+
+---
+
+# 10. Agent Configuration
 
 Example configuration:
 
-Node Name       : slave1
-Executors       : 3
-Remote Directory: /tmp
-Labels          : slave1
+```text
+Node Name        : slave1
 
-The label can be used to assign specific workloads to a particular agent.
+Executors        : 3
 
-**4. SSH Agent Configuration**
+Remote Directory : /tmp
 
-The Jenkins controller can connect to the EC2 agent through SSH.
+Labels           : slave1
+```
 
-Typical configuration includes:
+---
 
-Launch method:
+# 11. What are Executors?
+
+An **executor** represents a slot on an agent where Jenkins can run a build.
+
+Example:
+
+```text
+Executors = 3
+```
+
+Conceptually:
+
+```text
+Agent 1
+  |
+  ├── Executor 1 → Build A
+  ├── Executor 2 → Build B
+  └── Executor 3 → Build C
+```
+
+The number of executors should be selected according to the resources and workload of the agent.
+
+---
+
+# 12. What are Labels?
+
+Labels are used to identify specific Jenkins agents.
+
+Example:
+
+```text
+Label:
+slave1
+```
+
+A pipeline can use the label to request a specific agent.
+
+Example:
+
+```groovy
+agent {
+    label 'slave1'
+}
+```
+
+This tells Jenkins to run the pipeline on an agent matching that label.
+
+---
+
+# 13. SSH Agent Configuration
+
+The Jenkins Controller can connect to an EC2 agent using SSH.
+
+Typical configuration:
+
+```text
+Launch Method
+      ↓
 Launch agents via SSH
+```
 
-Host:
+### Host
+
+```text
 Private IP of Agent
+```
 
-Credentials:
+### Credentials
+
+```text
 SSH Username with private key
+```
 
-Username:
+### Username
+
+```text
 ec2-user
+```
 
-Private keys and credentials should never be committed to GitHub.
+---
 
+# 14. SSH Communication
 
+The basic communication flow is:
 
+```text
+Jenkins Controller
+        |
+        | SSH
+        ↓
+Jenkins Agent
+        |
+        ↓
+Execute Build
+```
 
-**5. Monitoring Jenkins Agents**
+The Jenkins Controller manages the agent, while the agent performs the assigned build work.
 
-Jenkins provides monitoring information for configured nodes.
+---
 
-Useful information includes:
+# 15. Jenkins Credentials
 
-Load statistics
-System information
-Build history
-Executor status
-Agent availability
-
-This helps understand how workloads are being distributed.
-
-**6.SonarQube**
-What is SonarQube?
-
-SonarQube is a code-quality and code-security analysis platform.
-
-It can help identify:
-
-Bugs
-Code smells
-Duplicate code
-Security vulnerabilities
-Other code-quality issues
-
-SonarQube can be integrated into a Jenkins CI pipeline so that source code is analyzed during the build process.
-
-**7.SonarQube Setup**
-
-I practiced setting up SonarQube on a separate EC2 instance.
-
-The environment included:
-
-AWS EC2
-    ↓
-Amazon Linux
-    ↓
-Java
-    ↓
-SonarQube
-    ↓
-Port 9000
-
-After installation, SonarQube can be accessed through:
-
-http://<SONARQUBE-IP>:9000
-
-Never publish real server IP addresses, credentials or authentication tokens in a public repository.
-
-
-**8.Jenkins + SonarQube Integration**
-
-The Jenkins environment can be configured with the required SonarQube plugins and server configuration.
-
-Typical components include:
-
-SonarQube Scanner
-Maven Integration
-SonarQube Quality Gates
-
-The SonarQube server is then configured in Jenkins under:
-
-Manage Jenkins
-    ↓
-System
-    ↓
-SonarQube Servers
-
-Authentication tokens should be stored securely in Jenkins Credentials rather than directly inside the Jenkinsfile.
-
-
-**Pipeline Flow**
-Developer
-    |
-    v
-Git Repository
-    |
-    v
-Jenkins
-    |
-    +----> Compile
-    |
-    +----> Test
-    |
-    +----> SonarQube Analysis
-    |
-    +----> Package
-    |
-    v
-Artifact
+SSH private keys should be stored securely in Jenkins C
